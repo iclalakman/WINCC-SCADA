@@ -12,7 +12,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
     oList.ListItems.Clear
     oList.ColumnHeaders.Clear
 
-    ' Standart WinCC ListView Display Settings
+    ' Standard WinCC ListView Display Settings
     oList.View = 3
     oList.GridLines = True
     oList.FullRowSelect = True
