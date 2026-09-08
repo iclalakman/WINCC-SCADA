@@ -4,7 +4,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
     ' Step 1: Connecting the list_data which is ActiveX ListView Object
     Set oList = ScreenItems("list_data")
     If oList Is Nothing Then
-        MsgBox "Hata: Ekranda 'list_data' adında bir ListView nesnesi bulunamadı!", vbCritical, "Hata"
+        MsgBox "Error: There is no ListView object on the screen named list_data !", vbCritical, "Error"
         Exit Sub
     End If
 
@@ -33,7 +33,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
         Exit Sub
     End If
 
-    ' Step 3: The query that extracting the tags from dbo.Archivetable 
+    'Step 3: The query that extracting the tags from dbo.Archivetable 
     strSQL = "SELECT ValueID, ValueName FROM [CC_iclal_pr_26_08_10_15_06_04R].[dbo].[Archive] ORDER BY ValueID ASC"
     Set rs = CreateObject("ADODB.Recordset")
     rs.Open strSQL, conn, 1, 1
@@ -44,7 +44,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
         Exit Sub
     End If
 
-    ' 4. This loop will be executed number of tags, it will pick the matching ValueNames and print the list_data
+    ' Step 4. This loop will be executed number of tags, it will pick the matching ValueNames and print the list_data
     rowCount = 1
     If Not (rs.BOF And rs.EOF) Then
         rs.MoveFirst
@@ -80,7 +80,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
         MsgBox "There is no tag found int the SQL table!", vbExclamation, "Warning"
     End If
 
-    ' Step5: Closing the connections safely and clean up of the memory
+    ' Step 5: Closing the connections safely and clean up of the memory
     rs.Close
     conn.Close
     Set oItem = Nothing
