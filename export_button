@@ -1,0 +1,69 @@
+Sub OnClick(ByVal Item)
+
+    Dim fso, file, filePath, wshShell, desktopPath
+    Dim oList, listItem, k, colCount, rowCount, lineStr
+
+    ' Even though the error occurs, make sure that it is continued
+    On Error Resume Next
+
+    ' 1. Ekrandaki güncel list_data tablosunu bağla
+    Set oList = ScreenItems("list_data")
+
+    ' Retrived the number of row and columns from recent table dynamically
+    colCount = oList.ColumnHeaders.Count
+    rowCount = oList.ListItems.Count
+
+    If rowCount = 0 Then
+        MsgBox "There is no data to filter!", vbExclamation, "No data"
+        Exit Sub
+    End If
+
+    Set wshShell = CreateObject("WScript.Shell")
+    desktopPath = wshShell.SpecialFolders("Desktop")
+    filePath = desktopPath & "\WinCC_Exported_Data.xls"
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    Set file = fso.CreateTextFile(filePath, True)
+
+    'Step 3: Print the headers of columns at the top 
+    lineStr = "Date / Time "
+    For k = 1 To colCount - 1
+        
+        Dim colName
+        colName = ""
+        colName = oList.ColumnHeaders(k + 1).Text
+        If colName = "" Then colName = oList.Columns(k).Caption ' Alternatif Grid yapısı için
+        If colName = "" Then colName = oList.ColumnHeaders.Item(k + 1).Text
+        If colName = "" Then colName = "  Tag_   " & k
+        
+        lineStr = lineStr & vbTab & colName
+    Next
+    file.WriteLine lineStr
+
+    'Step 4: Print the all rows into the table
+    For Each listItem In oList.ListItems
+        ' first column is date-time information
+        lineStr = listItem.Text
+
+        ' Rest of the values of selected tags
+        For k = 1 To colCount - 1
+            lineStr = lineStr & vbTab & listItem.SubItems(k)
+        Next
+
+        file.WriteLine lineStr
+    Next
+
+    ' Close the file
+    file.Close
+    Err.Clear
+    On Error GoTo 0
+
+    ' Refresh the memory
+    Set file = Nothing
+    Set fso = Nothing
+    Set wshShell = Nothing
+
+    ' Step 5: Success Mesaj
+    MsgBox "Operation has been done Successfully !" & vbCrLf & "It is exported on the desktop successfully", vbInformation, "Success"
+
+End Sub
