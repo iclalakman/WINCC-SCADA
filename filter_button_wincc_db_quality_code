@@ -1,0 +1,258 @@
+Sub OnClick(ByVal Item)    
+Dim conn, rs, strConn, strSQL
+Dim dtStart, dtEnd, sStartUTC, sEndUTC
+Dim oList, oItem, listItem
+Dim valID, rVal, quality, qStatus
+Dim objStartDate, objStartTime, objEndDate, objEndTime
+Dim tagIDs, idCount, rawStamp, strDate, strTime, dtLocal, sFormattedTime
+Dim dict, tKey, rowData, k, rawRealVal, colIdx, rowCount
+Dim selectedTagsArray, selectedIDsArray, arrIdx
+
+' Step 1 : Connecting the date, time and listview controls on the graphic designer
+    Set objStartDate = ScreenItems("start_date")
+    Set objStartTime = ScreenItems("start_time")
+    Set objEndDate   = ScreenItems("end_date")
+    Set objEndTime   = ScreenItems("end_time")
+    Set oList        = ScreenItems("list_data") 
+
+ ' Step 2: Merge the date and time together
+    On Error Resume Next
+    dtStart = DateValue(objStartDate.Value) + TimeValue(objStartTime.Value)
+    dtEnd   = DateValue(objEndDate.Value) + TimeValue(objEndTime.Value)
+
+    If Err.Number <> 0 Then
+        MsgBox "Date-Time Reading Error! Please check the names of the objects: " & Err.Description, vbCritical, "Error"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+ ' Step 3: Due to my time zone is +3, I had to subtract the 3 hours than usual from WINCC
+    dtStart = DateAdd("h", -3, dtStart)
+    dtEnd   = DateAdd("h", -3, dtEnd)
+
+ ' Step 4: Converting to the SQL format (YYYY-MM-DD HH:MM:SS.000)
+    sStartUTC = Year(dtStart) & "-" & Right("0" & Month(dtStart), 2) & "-" & Right("0" & Day(dtStart), 2) & " " & _
+                Right("0" & Hour(dtStart), 2) & ":" & Right("0" & Minute(dtStart), 2) & ":" & Right("0" & Second(dtStart), 2) & ".000"
+
+    sEndUTC   = Year(dtEnd) & "-" & Right("0" & Month(dtEnd), 2) & "-" & Right("0" & Day(dtEnd), 2) & " " & _
+                Right("0" & Hour(dtEnd), 2) & ":" & Right("0" & Minute(dtEnd), 2) & ":" & Right("0" & Second(dtEnd), 2) & ".000"
+
+' Step 5: Retrieving the data of list_data (for tag choice-selection)
+    tagIDs = ""
+    idCount = 0
+
+' We will count how many tag has been selected
+    For Each listItem In oList.ListItems
+        If listItem.Checked Then
+            idCount = idCount + 1
+        End If
+    Next
+
+    If idCount = 0 Then
+        MsgBox "Please choose the tags from list_data for filtered query!", vbExclamation, "Warning"
+        Exit Sub
+    End If
+
+  ' We will match the tagID's with their tag names into the arrays for the chosen ones.
+    ReDim selectedIDsArray(idCount - 1)
+    ReDim selectedTagsArray(idCount - 1)
+
+    arrIdx = 0
+    For Each listItem In oList.ListItems
+        If listItem.Checked Then
+            selectedIDsArray(arrIdx) = CLng(listItem.Text)
+            selectedTagsArray(arrIdx) = listItem.SubItems(1)
+            tagIDs = tagIDs & listItem.Text & ";"
+            arrIdx = arrIdx + 1
+        End If
+    Next
+
+    ' Configuration for SQL format
+    tagIDs = Left(tagIDs, Len(tagIDs) - 1)
+    If idCount > 1 Then
+        tagIDs = "(" & tagIDs & ")"
+    End If
+
+    ' Step 6: Database Connection (Windows Authentication)
+    On Error Resume Next
+    Err.Clear
+    strConn = "Provider=SQLOLEDB;Data Source=.\WINCC;Integrated Security=SSPI;"
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open strConn
+
+    If Err.Number <> 0 Then
+        MsgBox "Database Connection Error: " & Err.Description, vbCritical, "Error"
+        Exit Sub
+    End If
+
+    ' ** DÜZELTİLMİŞ SQL SORGUSU **
+    strSQL = "SELECT ValueID, Timestamp, RealValue, Quality FROM OPENQUERY(LnkRtDb_WinCCOLEDB, " & _
+             "'TAG:R," & tagIDs & ",''" & sStartUTC & "'',''" & sEndUTC & "''')"
+
+
+    Set rs = CreateObject("ADODB.Recordset")
+    rs.Open strSQL, conn
+
+    If Err.Number <> 0 Then
+        MsgBox "Query Error (OPENQUERY): " & Err.Description, vbCritical, "Error"
+        conn.Close
+        Exit Sub
+    End If
+
+    ' Step 8: Creating list_data columns
+    oList.ListItems.Clear
+    oList.ColumnHeaders.Clear
+
+    ' The first column is always for Date-Time
+    oList.ColumnHeaders.Add 1, "hTime", "Date / Time", 140
+
+    ' ** GÜNCELLEME ** -> Her tag için hem Değer hem de Kalite kolonu oluşturuluyor
+    Dim colCounter
+    colCounter = 2
+    For k = 0 To idCount - 1
+        oList.ColumnHeaders.Add colCounter, "col_" & selectedIDsArray(k), selectedTagsArray(k), 100
+        colCounter = colCounter + 1
+        oList.ColumnHeaders.Add colCounter, "q_" & selectedIDsArray(k), selectedTagsArray(k) & " Quality", 90
+        colCounter = colCounter + 1
+    Next
+
+    ' Step 9. We will calculate the statistics dynamically
+    ReDim counts(idCount - 1)
+    ReDim sums(idCount - 1)
+    ReDim mins(idCount - 1)
+    ReDim maxs(idCount - 1)
+
+    For k = 0 To idCount - 1
+        counts(k) = 0
+        sums(k) = 0.0
+        mins(k) = 999999.0
+        maxs(k) = -999999.0
+    Next
+
+    ' Step 10. According to timestamp, we will calculate and combine the data that we retrieved from database
+    Set dict = CreateObject("Scripting.Dictionary")
+
+    Do While Not rs.EOF
+        rawStamp = CStr(rs.Fields("Timestamp").Value)
+
+        If InStr(rawStamp, " ") > 0 Then
+            strDate = Left(rawStamp, InStr(rawStamp, " ") - 1)
+            strTime = Mid(rawStamp, InStr(rawStamp, " ") + 1, 8)
+
+            ' According to WinCC database, we have to add the +3 hours in the UTC clock
+            dtLocal = DateAdd("h", 3, CDate(strDate & " " & strTime))
+            sFormattedTime = Year(dtLocal) & "-" & Right("0" & Month(dtLocal), 2) & "-" & Right("0" & Day(dtLocal), 2) & " " & _
+                             Right("0" & Hour(dtLocal), 2) & ":" & Right("0" & Minute(dtLocal), 2) & ":" & Right("0" & Second(dtLocal), 2)
+        Else
+            sFormattedTime = rawStamp
+        End If
+
+        valID = CLng(rs.Fields("ValueID").Value)
+        rawRealVal = CDbl(rs.Fields("RealValue").Value)
+        rVal  = FormatNumber(rawRealVal, 2)
+        
+        ' ** GÜNCELLEME ** -> Veritabanından Quality değerini oku ve kontrol et
+        quality = CLng(rs.Fields("Quality").Value)
+        If quality = 128 Then
+            qStatus = "good-ok"
+        Else
+            qStatus = "Bad (" & quality & ")"
+        End If
+
+        ' Dynamically calculating statistics
+        For k = 0 To idCount - 1
+            If selectedIDsArray(k) = valID Then
+                counts(k) = counts(k) + 1
+                sums(k) = sums(k) + rawRealVal
+
+                If rawRealVal < mins(k) Then mins(k) = rawRealVal
+                If rawRealVal > maxs(k) Then maxs(k) = rawRealVal
+                Exit For
+            End If
+        Next
+
+        ' ** GÜNCELLEME ** -> Sözlük dizisi boyutu her tag için 2 katına çıkarıldı (Değer ve Kalite yan yana olacağı için)
+        If Not dict.Exists(sFormattedTime) Then
+            Dim emptyArray()
+            ReDim emptyArray((idCount * 2) - 1)
+            For k = 0 To UBound(emptyArray) : emptyArray(k) = "-" : Next
+            dict.Add sFormattedTime, emptyArray
+        End If
+
+        ' ** GÜNCELLEME ** -> Değer ve Kalite durumunu doğru index yerlerine yerleştirme
+        rowData = dict(sFormattedTime)
+        For k = 0 To idCount - 1
+            If selectedIDsArray(k) = valID Then
+                rowData(k * 2) = rVal          ' Çift indexler Değerleri tutar (0, 2, 4...)
+                rowData((k * 2) + 1) = qStatus  ' Tek indexler Kaliteyi tutar (1, 3, 5...)
+                Exit For
+            End If
+        Next
+        dict(sFormattedTime) = rowData
+
+        rs.MoveNext
+    Loop
+
+    ' Step 11: Printing all data into the list_data
+    rowCount = 1
+    For Each tKey In dict.Keys
+        rowData = dict(tKey)
+        Set oItem = oList.ListItems.Add(rowCount, , CStr(tKey))
+        For k = 0 To UBound(rowData)
+            oItem.SubItems(k + 1) = rowData(k)
+        Next
+        rowCount = rowCount + 1
+    Next
+    
+     ' 12. Adding the staticstical information end of the list_data
+
+    ' Seperator (Ayırıcı Çizgi)
+    Set oItem = oList.ListItems.Add(rowCount, , "-------------------")
+    rowCount = rowCount + 1
+
+    ' COUNT
+    Set oItem = oList.ListItems.Add(rowCount, , "COUNT")
+    For k = 0 To idCount - 1
+        oItem.SubItems((k * 2) + 1) = CStr(counts(k)) ' Değer kolonunun altına yazar
+        oItem.SubItems((k * 2) + 2) = ""              ' Kalite kolonunun altını boş bırakır
+    Next
+    rowCount = rowCount + 1
+
+    ' AVERAGE
+    Set oItem = oList.ListItems.Add(rowCount, , "AVERAGE")
+    For k = 0 To idCount - 1
+        If counts(k) > 0 Then
+            oItem.SubItems((k * 2) + 1) = FormatNumber(sums(k) / counts(k), 2)
+        Else
+            oItem.SubItems((k * 2) + 1) = "0.00"
+        End If
+        oItem.SubItems((k * 2) + 2) = ""
+    Next
+    rowCount = rowCount + 1
+
+    ' MINIMUM
+    Set oItem = oList.ListItems.Add(rowCount, , "MINIMUM")
+    For k = 0 To idCount - 1
+        If counts(k) > 0 Then
+            oItem.SubItems((k * 2) + 1) = FormatNumber(mins(k), 2)
+        Else
+            oItem.SubItems((k * 2) + 1) = "-"
+        End If
+        oItem.SubItems((k * 2) + 2) = ""
+    Next
+    rowCount = rowCount + 1
+
+    ' MAXIMUM
+    Set oItem = oList.ListItems.Add(rowCount, , "MAXIMUM")
+    For k = 0 To idCount - 1
+        If counts(k) > 0 Then
+            oItem.SubItems((k * 2) + 1) = FormatNumber(maxs(k), 2)
+        Else
+            oItem.SubItems((k * 2) + 1) = "-"
+        End If
+        oItem.SubItems((k * 2) + 2) = ""
+    Next
+    rowCount = rowCount + 1
+
+
+End Sub
