@@ -1,4 +1,4 @@
-Sub OnClick(ByVal Item)    
+Sub OnClick(ByVal Item)      
 Dim conn, rs, strConn, strSQL
 Dim dtStart, dtEnd, sStartUTC, sEndUTC
 Dim oList, oItem, listItem
@@ -151,13 +151,52 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
         rawRealVal = CDbl(rs.Fields("RealValue").Value)
         rVal  = FormatNumber(rawRealVal, 2)
         
-        ' ** GÜNCELLEME ** -> Veritabanından Quality değerini oku ve kontrol et
-        quality = CLng(rs.Fields("Quality").Value)
-        If quality = 128 Then
-            qStatus = "good-ok"
-        Else
-            qStatus = "Bad (" & quality & ")"
-        End If
+        
+       ' ** GÜNCELLEME ** -> Veritabanından Quality değerini oku ve kontrol et
+		quality = CLng(rs.Fields("Quality").Value)
+
+		If quality = 0 Then                  ' 0x00
+		    qStatus = "bad - non-specific (0x00)"
+		ElseIf quality = 4 Then              ' 0x04
+		    qStatus = "bad - configuration error (value not accepted)(0x04)"
+		ElseIf quality = 8 Then              ' 0x08
+		    qStatus = "bad - not connected (0x08)"
+		ElseIf quality = 12 Then             ' 0x0C
+		    qStatus = "bad - device failure (0x0C)"
+		ElseIf quality = 20 Then             ' 0x14
+		    qStatus = "bad - no communication (last usable value) (0x14)"
+		ElseIf quality = 24 Then             ' 0x18
+		    qStatus = "bad - no communication (no usable value) (0x18)"
+		ElseIf quality = 28 Then             ' 0x1C
+		    qStatus = "bad - out of service (0x1C)"
+		ElseIf quality = 40 Then             ' 0x28
+		    qStatus = "bad - process related, substitute value (0x28)"
+		ElseIf quality = 43 Then             ' 0x2B
+		    qStatus = "bad - process related, substitute value - low and high limited (0x2B)"
+		ElseIf quality = 64 Then             ' 0x40
+		    qStatus = "uncertain - non-specific (0x40)"
+		ElseIf quality = 68 Then             ' 0x44
+		    qStatus = "uncertain - last usable value (0x44)"
+		ElseIf quality = 72 Then             ' 0x48
+		    qStatus = "uncertain - substitute set (0x48)"
+		ElseIf quality = 76 Then             ' 0x4C
+		    qStatus = "uncertain - initial value (0x4C)"
+		ElseIf quality = 84 Then             ' 0x54
+		    qStatus = "uncertain - engineering unit range violation (0x54)"
+		Elseif quality = 96 Then             ' 0x60
+		    qStatus = "uncertain - simulated value (0x60)"
+		ElseIf quality = 104 Then            ' 0x68
+		    qStatus = "uncertain - maintainance demanded (0x68)"
+		ElseIf quality = 120 Then            ' 0x78
+		    qStatus = "uncertain - process related, no maintenance (0x78)"
+		ElseIf quality = 128 Then            ' 0x80
+		    qStatus = "good - ok (0x80)"
+		ElseIf quality = 192 Then            ' 0xC0
+		    qStatus = "good - ok (0xC0)"
+		Else
+		    qStatus = "The code is not on the list, Unknown code! (" & quality & ")"
+		End If
+
 
         ' Dynamically calculating statistics
         For k = 0 To idCount - 1
@@ -253,6 +292,5 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
         oItem.SubItems((k * 2) + 2) = ""
     Next
     rowCount = rowCount + 1
-
 
 End Sub
