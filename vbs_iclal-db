@@ -1,0 +1,40 @@
+Option Explicit
+Function action
+
+Dim conn, sql
+Dim tempVal, pressVal, statVal, totVal, timeStamp
+
+tempVal = HMIRuntime.Tags("Temperature").Read
+pressVal = HMIRuntime.Tags("Pressure").Read
+statVal = HMIRuntime.Tags("Status").Read
+totVal = HMIRuntime.Tags("Total").Read
+
+tempVal = Replace(CStr(tempVal), ",", ".")
+pressVal = Replace(CStr(pressVal), ",", ".")
+statVal = Replace(CStr(statVal), ",", ".")
+totVal = Replace(CStr(totVal), ",", ".")
+
+timeStamp = Year(Now) & "-" & _
+Right("0" & Month(Now), 2) & "-" & _
+Right("0" & Day(Now), 2) & " " & _
+Right("0" & Hour(Now), 2) & ":" & _
+Right("0" & Minute(Now), 2) & ":" & _
+Right("0" & Second(Now), 2) & ".000"
+
+Set conn = CreateObject("ADODB.Connection")
+conn.Open "Provider=SQLOLEDB; Data Source=localhost\WINCC; Initial Catalog=iclal-db; Integrated Security=SSPI;"
+
+sql = "INSERT INTO TAG_DATA ([Date], Temperature, Pressure, Current_Status, Total) " & _
+"VALUES ('" & timeStamp & "', " & tempVal & ", " & pressVal & ", " & statVal & ", " & totVal & ")"
+
+conn.Execute sql
+
+If Err.Number <> 0 Then
+    HMIRuntime.Trace "SQL sorgu hatası: " &Err.Description & " | SQL: " & sql & vbCtrLf
+    Err.Clear
+End If
+
+conn.Close
+
+Set conn = Nothing
+End Function
