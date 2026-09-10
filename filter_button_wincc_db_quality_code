@@ -1,4 +1,4 @@
-iclalSub OnClick(ByVal Item)    
+Sub OnClick(ByVal Item)    
 Dim conn, rs, strConn, strSQL
 Dim dtStart, dtEnd, sStartUTC, sEndUTC
 Dim oList, oItem, listItem
