@@ -1,0 +1,4 @@
+SELECT TagID, COUNT(*) AS NumberOfRows
+FROM [backup-wincc].[dbo].[HistoryTagLogs] 
+GROUP BY TagID 
+ORDER BY TagID;
