@@ -5,9 +5,7 @@ Function action
     
     On Error Resume Next
     
-    ' =========================================================================
-    ' 1. BÖLÜM: VERİTABANI İSİMLERİ VE BAĞLANTI BİLGİLERİ
-    ' =========================================================================
+    
     winccDbName = "CC_iclal_pr_26_08_10_15_06_04R"
     backupConnStr = "Provider=SQLOLEDB;Data Source=ENG\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
     
