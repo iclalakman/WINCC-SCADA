@@ -1,0 +1,64 @@
+Option Explicit
+Function action
+    Dim connWinCC, connBackup, rsWinCC, strSql, deleteSql
+    Dim winccDbName, backupConnStr, startTime, endTime
+    
+    On Error Resume Next
+    
+    ' =========================================================================
+    ' 1. BÖLÜM: VERİTABANI İSİMLERİ VE BAĞLANTI BİLGİLERİ
+    ' =========================================================================
+    winccDbName = "CC_iclal_pr_26_08_10_15_06_04R"
+    backupConnStr = "Provider=SQLOLEDB;Data Source=ENG\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
+    
+    ' EndTime: Kodun tetiklendiği tam şu anki zaman (Örn: Saat 11:40:00)
+    endTime = Year(Now) & "-" & Right("0" & Month(Now), 2) & "-" & Right("0" & Day(Now), 2) & " " & Right("0" & Hour(Now), 2) & ":" & Right("0" & Minute(Now), 2) & ":" & Right("0" & Second(Now), 2) & ".000"
+    
+    ' StartTime: Kodun tetiklendiği andan tam 24 saat (1 gün) öncesi (Dün Saat 11:40:00)
+    Dim yesterday
+    yesterday = DateAdd("d", -1, Now)
+    startTime = Year(yesterday) & "-" & Right("0" & Month(yesterday), 2) & "-" & Right("0" & Day(yesterday), 2) & " " & Right("0" & Hour(Now), 2) & ":" & Right("0" & Minute(Now), 2) & ":" & Right("0" & Second(Now), 2) & ".000"
+    
+    ' Bağlantı nesnelerini oluştur ve SQL'e bağlan
+    Set connWinCC = CreateObject("ADODB.Connection")
+    Set connBackup = CreateObject("ADODB.Connection")
+    
+    connWinCC.Open "Provider=SQLOLEDB;Data Source=ENG\WINCC;Initial Catalog=" & winccDbName & ";Integrated Security=SSPI;"
+    connBackup.Open backupConnStr
+    
+    If Err.Number <> 0 Then
+        HMIRuntime.Trace "KRITIK HATA: Veritabanı baglantilari kurulamadi! " & Err.Description & vbCrLf
+        Exit Function
+    End If
+    
+    ' =========================================================================
+    ' 2. BÖLÜM: YENİ EKLENEN TAG TANIMLARINI GÜNCELLEME (TagDefinitions)
+    ' =========================================================================
+    strSql = "SELECT ValueID, ValueName FROM [dbo].[Archive]"
+    Set rsWinCC = connWinCC.Execute(strSql)
+    
+    Do While Not rsWinCC.EOF
+        Dim vID, vName, checkSql, rsCheck
+        vID = rsWinCC.Fields("ValueID").Value
+        vName = rsWinCC.Fields("ValueName").Value
+        
+        vName = Replace(vName, "'", "''")
+        
+        checkSql = "SELECT COUNT(*) FROM TagDefinitions WHERE TagID = " & vID
+        Set rsCheck = connBackup.Execute(checkSql)
+        
+        If rsCheck.Fields(0).Value = 0 Then
+            Dim insertTagSql
+            insertTagSql = "INSERT INTO TagDefinitions (TagID, TagName) VALUES (" & vID & ", '" & vName & "')"
+            connBackup.Execute insertTagSql
+            HMIRuntime.Trace "-> Yeni Tag Sabit Tabloya Eklendi: " & vName & " (ID: " & vID & ")" & vbCrLf
+        End If
+        
+        rsWinCC.MoveNext
+    Loop
+    
+    rsWinCC.Close
+    connWinCC.Close
+    Set rsWinCC = Nothing
+    Set connWinCC = Nothing
+End Function
