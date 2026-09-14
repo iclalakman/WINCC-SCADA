@@ -1,23 +1,24 @@
 Option Explicit
 Function action
+
     Dim connWinCC, connBackup, rsWinCC, strSql, deleteSql
     Dim winccDbName, backupConnStr, startTime, endTime
     
     On Error Resume Next
     
-    
+    'Database connection
     winccDbName = "CC_iclal_pr_26_08_10_15_06_04R"
     backupConnStr = "Provider=SQLOLEDB;Data Source=ENG\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
     
-    ' EndTime: Kodun tetiklendiği tam şu anki zaman (Örn: Saat 11:40:00)
+    'Recent time that this script is triggered(end time)
     endTime = Year(Now) & "-" & Right("0" & Month(Now), 2) & "-" & Right("0" & Day(Now), 2) & " " & Right("0" & Hour(Now), 2) & ":" & Right("0" & Minute(Now), 2) & ":" & Right("0" & Second(Now), 2) & ".000"
     
-    ' StartTime: Kodun tetiklendiği andan tam 24 saat (1 gün) öncesi (Dün Saat 11:40:00)
+    '24 hours before this end time is triggered(start time)
     Dim yesterday
     yesterday = DateAdd("d", -1, Now)
     startTime = Year(yesterday) & "-" & Right("0" & Month(yesterday), 2) & "-" & Right("0" & Day(yesterday), 2) & " " & Right("0" & Hour(Now), 2) & ":" & Right("0" & Minute(Now), 2) & ":" & Right("0" & Second(Now), 2) & ".000"
     
-    ' Bağlantı nesnelerini oluştur ve SQL'e bağlan
+    'Create connection objects and connect to SQL
     Set connWinCC = CreateObject("ADODB.Connection")
     Set connBackup = CreateObject("ADODB.Connection")
     
@@ -25,13 +26,11 @@ Function action
     connBackup.Open backupConnStr
     
     If Err.Number <> 0 Then
-        HMIRuntime.Trace "KRITIK HATA: Veritabanı baglantilari kurulamadi! " & Err.Description & vbCrLf
+        HMIRuntime.Trace "ERROR: The connection error has been detected! " & Err.Description & vbCrLf
         Exit Function
     End If
     
-    ' =========================================================================
-    ' 2. BÖLÜM: YENİ EKLENEN TAG TANIMLARINI GÜNCELLEME (TagDefinitions)
-    ' =========================================================================
+   'Update the recent table
     strSql = "SELECT ValueID, ValueName FROM [dbo].[Archive]"
     Set rsWinCC = connWinCC.Execute(strSql)
     
@@ -59,4 +58,5 @@ Function action
     connWinCC.Close
     Set rsWinCC = Nothing
     Set connWinCC = Nothing
+
 End Function
