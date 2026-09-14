@@ -1,0 +1,4 @@
+USE [backup-wincc]
+GO
+TRUNCATE TABLE [dbo].[HistoryTagLogs];
+GO
