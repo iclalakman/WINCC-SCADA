@@ -4,55 +4,56 @@ Function action
     Dim strConn, sStartUTC, sEndUTC
     Dim dtStart, dtEnd
     
-    ' Olası runtime hatalarını loglayabilmek ve scriptin çökmesini önlemek için aktif
+    'Enable the error message for in case of corruption of script during runtime logs
     On Error Resume Next
 
     dtEnd = Now
-    dtStart = DateAdd("m", -1, dtEnd) ' Burayı istersen haftalık için "ww", günlük için "d" yapabilirsin kanka
+    'For daily write "d"
+    'For weekly write "ww"
+    'For monthly write "m"
+    dtStart = DateAdd("m", -1, dtEnd) 
     
-    ' WinCC içindeki UTC zaman standardı için senin buton kodundaki gibi 3 saat çıkartıyoruz
+    'Extract 3 hours due to UTC and WINCC's local time discrepancy
     dtStart = DateAdd("h", -3, dtStart)
     dtEnd   = DateAdd("h", -3, dtEnd)
     
-    ' SQL Server ve WinCC OLE DB'nin tam anladığı format (YYYY-MM-DD HH:MM:SS.000)
+    'Correct format of date and time for SQL Server ve WinCC OLEDB (YYYY-MM-DD HH:MM:SS.000)
     sStartUTC = Year(dtStart) & "-" & Right("0" & Month(dtStart), 2) & "-" & Right("0" & Day(dtStart), 2) & " " & _
                 Right("0" & Hour(dtStart), 2) & ":" & Right("0" & Minute(dtStart), 2) & ":" & Right("0" & Second(dtStart), 2) & ".000"
 
     sEndUTC   = Year(dtEnd) & "-" & Right("0" & Month(dtEnd), 2) & "-" & Right("0" & Day(dtEnd), 2) & " " & _
                 Right("0" & Hour(dtEnd), 2) & ":" & Right("0" & Minute(dtEnd), 2) & ":" & Right("0" & Second(dtEnd), 2) & ".000"
 
-    ' =========================================================================
-    ' 2. BÖLÜM: VERİTABANI BAĞLANTISINI AÇMA (Lokal WinCC Instance)
-    ' =========================================================================
+    
+    'Database connection local wincc instance 
     strConn = "Provider=SQLOLEDB;Data Source=.\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
     Set conn = CreateObject("ADODB.Connection")
     conn.Open strConn
 
-    ' =========================================================================
-    ' 3. BÖLÜM: BAĞLANTI KONTROLÜ VE GÜÇLÜ SQL PROSEDÜRÜNÜN TETİKLENMESİ
-    ' =========================================================================
+    
+    'Connection control and trigger of SQL query
     If Err.Number <> 0 Then
-        HMIRuntime.Trace "AYLIK YEDEKLEME KRITIK HATA: Yedek veritabanına bağlanılamadı! " & Err.Description & vbCrLf
+        HMIRuntime.Trace "Error: Connection error with database! " & Err.Description & vbCrLf
     Else
-        HMIRuntime.Trace "AYLIK YEDEKLEME BİLGİ: Bağlantı başarılı. SQL döngü prosedürü tetikleniyor..." & vbCrLf
-        HMIRuntime.Trace "Sorgu Zaman Aralığı (UTC): " & sStartUTC & " ile " & sEndUTC & vbCrLf
+        HMIRuntime.Trace "Back up information: Connection is successful. SQL query has been triggered" & vbCrLf
+        HMIRuntime.Trace "Query time interval (UTC): " & sStartUTC & " ile " & sEndUTC & vbCrLf
 
-        ' SQL tarafında kurduğumuz, 21 tagi tek tek tarayan döngülü dev prosedürü çağırıyoruz
+        'Search the all tags that has been created using loop
         strSQL = "EXEC dbo.Sp_WinCC_AllTags_Backup '" & sStartUTC & "', '" & sEndUTC & "'"
         conn.Execute strSQL
 
-        ' SQL yürütülürken bir hata oluştu mu kontrolü
+        'Error handling of whether error occured 
         If Err.Number <> 0 Then
-            HMIRuntime.Trace "AYLIK YEDEKLEME KRITIK HATA: SQL prosedürü çalışırken patladı! Hata: " & Err.Description & vbCrLf
+            HMIRuntime.Trace "Back up Error: SQL query i! Error: " & Err.Description & vbCrLf
         Else
-            HMIRuntime.Trace "AYLIK YEDEKLEME BAŞARI: Tüm taglere ait geçmiş veriler backup-wincc veritabanına eksiksiz kopyalandı!" & vbCrLf
+            HMIRuntime.Trace "Back up is successful: All data was copied in secure environment!" & vbCrLf
         End If
         
-        ' Bağlantıyı güvenli kapat
+        'Close the connection safely
         conn.Close
     End If
 
-    ' Hafızayı temizle
+    'Clean up and refresh the memory
     Set conn = Nothing
     On Error GoTo 0
 
