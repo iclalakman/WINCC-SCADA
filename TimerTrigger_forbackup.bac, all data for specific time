@@ -1,0 +1,32 @@
+Option Explicit
+Function action
+    Dim conn, strSQL
+    Dim strConn, sStartUTC, sEndUTC
+    Dim dtStart, dtEnd
+    
+    dtStart = DateValue("2026-09-09") + TimeValue("00:00:00")
+    dtEnd   = DateValue("2026-09-09") + TimeValue("23:59:59")
+    
+    dtStart = DateAdd("h", -3, dtStart)
+    dtEnd   = DateAdd("h", -3, dtEnd)
+    
+    sStartUTC = Year(dtStart) & "-" & Right("0" & Month(dtStart), 2) & "-" & Right("0" & Day(dtStart), 2) & " " & _
+                Right("0" & Hour(dtStart), 2) & ":" & Right("0" & Minute(dtStart), 2) & ":" & Right("0" & Second(dtStart), 2) & ".000"
+
+    sEndUTC   = Year(dtEnd) & "-" & Right("0" & Month(dtEnd), 2) & "-" & Right("0" & Day(dtEnd), 2) & " " & _
+                Right("0" & Hour(dtEnd), 2) & ":" & Right("0" & Minute(dtEnd), 2) & ":" & Right("0" & Second(dtEnd), 2) & ".000"
+
+    strConn = "Provider=SQLOLEDB;Data Source=.\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
+    Set conn = CreateObject("ADODB.Connection")
+    conn.Open strConn
+
+    ' Döngülü çalışan yeni toplu prosedürü çağırıyoruz
+    strSQL = "EXEC dbo.Sp_WinCC_AllTags_Backup '" & sStartUTC & "', '" & sEndUTC & "'"
+    conn.Execute strSQL
+
+    HMIRuntime.Trace "--- DÖNGÜLÜ TOPLU TRANSFER TETİKLENDİ ---" & vbCrLf
+
+    conn.Close
+    Set conn = Nothing
+
+End Function
