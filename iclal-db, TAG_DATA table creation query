@@ -1,0 +1,9 @@
+CREATE TABLE [dbo].[TAG_DATA] (
+    [ID] INT IDENTITY(1,1) NOT NULL,
+    [Date] DATETIME NULL DEFAULT GETDATE(),
+    [Temperature] FLOAT NULL,
+    [Pressure] FLOAT NULL,
+    [Current_Status] FLOAT NULL,
+    [Total] FLOAT NULL,
+    CONSTRAINT [PK_TAG_DATA] PRIMARY KEY ([ID])
+); 
