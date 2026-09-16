@@ -1,6 +1,6 @@
 USE [backup-wincc];
 GO
 
-CREATE NONCLUSTERED COLUMNSTORE INDEX ncci_HistoryTagLogs 
-ON dbo.HistoryTagLogs (Timestamp, LogID, TagID, TagValue, QualityCode);
+CREATE NONCLUSTERED COLUMNSTORE INDEX ncci_HistoryTagLogs_TimestampOnly
+ON dbo.HistoryTagLogs (Timestamp);
 GO
