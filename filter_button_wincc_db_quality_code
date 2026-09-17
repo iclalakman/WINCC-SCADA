@@ -85,7 +85,6 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
         Exit Sub
     End If
 
-    ' ** DÜZELTİLMİŞ SQL SORGUSU **
     strSQL = "SELECT ValueID, Timestamp, RealValue, Quality FROM OPENQUERY(LnkRtDb_WinCCOLEDB, " & _
              "'TAG:R," & tagIDs & ",''" & sStartUTC & "'',''" & sEndUTC & "''')"
 
@@ -106,7 +105,7 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
     ' The first column is always for Date-Time
     oList.ColumnHeaders.Add 1, "hTime", "Date / Time", 140
 
-    ' ** GÜNCELLEME ** -> Her tag için hem Değer hem de Kalite kolonu oluşturuluyor
+  'Creates columns for a value and a quality code each tag
     Dim colCounter
     colCounter = 2
     For k = 0 To idCount - 1
@@ -152,7 +151,7 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
         rVal  = FormatNumber(rawRealVal, 2)
         
         
-       ' ** GÜNCELLEME ** -> Veritabanından Quality değerini oku ve kontrol et
+       'Read the quality value from database and check it
 		quality = CLng(rs.Fields("Quality").Value)
 
 		If quality = 0 Then                  ' 0x00
@@ -210,7 +209,7 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
             End If
         Next
 
-        ' ** GÜNCELLEME ** -> Sözlük dizisi boyutu her tag için 2 katına çıkarıldı (Değer ve Kalite yan yana olacağı için)
+       
         If Not dict.Exists(sFormattedTime) Then
             Dim emptyArray()
             ReDim emptyArray((idCount * 2) - 1)
@@ -218,7 +217,7 @@ Dim selectedTagsArray, selectedIDsArray, arrIdx
             dict.Add sFormattedTime, emptyArray
         End If
 
-        ' ** GÜNCELLEME ** -> Değer ve Kalite durumunu doğru index yerlerine yerleştirme
+    
         rowData = dict(sFormattedTime)
         For k = 0 To idCount - 1
             If selectedIDsArray(k) = valID Then
