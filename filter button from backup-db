@@ -191,7 +191,7 @@ Dim counts, sums, mins, maxs
             qStatus = "Unknown (" & quality & ")"
         End If
 
-        ' Eğer bu tarih ilk defa geldiyse boş dizi oluştur
+        ' If this date never executed before, create a new empty array
         If Not dict.Exists(sFormattedTime) Then
             ReDim rowData( (idCount * 2) - 1 )
             For k = 0 To UBound(rowData)
@@ -200,7 +200,7 @@ Dim counts, sums, mins, maxs
             dict.Add sFormattedTime, rowData
         End If
         
-        ' ** KRİTİK DÜZELTME ** WinCC VBScript için dizi referansını yenileyerek atama yapıyoruz
+        ' Update the array reference
         currentFields = dict.Item(sFormattedTime)
         
         For k = 0 To idCount - 1
@@ -216,7 +216,7 @@ Dim counts, sums, mins, maxs
             End If
         Next
         
-        ' Güncellenen diziyi dictionary nesnesine geri yüklüyoruz
+        ' Load the updated array into the dictionary object
         dict.Item(sFormattedTime) = currentFields
 
         rs.MoveNext
@@ -225,12 +225,12 @@ Dim counts, sums, mins, maxs
     rs.Close
     conn.Close
 
-    ' ------------------------------------------------------------------------------------------
-    ' 1. VERİTABANINDAN GELEN DETAY (ZAMAN SERİSİ) SATIRLARINI LİSTEYE AKTARMA (ÖNCE YAZILIR)
-    ' ------------------------------------------------------------------------------------------
+  
     Dim allKeys, allItems, i
     allKeys = dict.Keys
     allItems = dict.Items
+
+    'Printing the data comes from database
 
     For i = 0 To dict.Count - 1
         Set listItem = oList.ListItems.Add(, , CStr(allKeys(i)))
@@ -241,21 +241,19 @@ Dim counts, sums, mins, maxs
         Next
     Next
 
-    ' ------------------------------------------------------------------------------------------
-    ' 2. İSTATİSTİK SATIRLARINI EKLEME (EN SONA TAŞINDI)
-    ' ------------------------------------------------------------------------------------------
+  
+    'Statistical definitions
     Dim itemAvg
     
-    ' BOŞLUK SATIRI (Verilerle istatistikler karışmasın diye görsel ayrım)
     oList.ListItems.Add , , "------------------"
 
-    ' COUNT Satırı
+    ' COUNT 
     Set listItem = oList.ListItems.Add(, , "COUNT")
     For k = 0 To idCount - 1
         listItem.SubItems(k * 2 + 1) = CStr(counts(k))
     Next
 
-    ' AVERAGE Satırı
+    ' AVERAGE 
     Set listItem = oList.ListItems.Add(, , "AVERAGE")
     For k = 0 To idCount - 1
         If counts(k) > 0 Then
@@ -266,14 +264,14 @@ Dim counts, sums, mins, maxs
         End If
     Next
 
-    ' MINIMUM Satırı
+    ' MINIMUM 
     Set listItem = oList.ListItems.Add(, , "MINIMUM")
     For k = 0 To idCount - 1
         If mins(k) = 999999.0 Then mins(k) = 0.0
         listItem.SubItems(k * 2 + 1) = FormatNumber(mins(k), 2)
     Next
 
-    ' MAXIMUM Satırı
+    ' MAXIMUM 
     Set listItem = oList.ListItems.Add(, , "MAXIMUM")
     For k = 0 To idCount - 1
     If maxs(k) = -999999.0 Then maxs(k) = 0.0
