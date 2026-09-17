@@ -48,7 +48,7 @@ Function action
             Dim insertTagSql
             insertTagSql = "INSERT INTO TagDefinitions (TagID, TagName) VALUES (" & vID & ", '" & vName & "')"
             connBackup.Execute insertTagSql
-            HMIRuntime.Trace "-> Yeni Tag Sabit Tabloya Eklendi: " & vName & " (ID: " & vID & ")" & vbCrLf
+            HMIRuntime.Trace "-> New Tag Added to Table: " & vName & " (ID: " & vID & ")" & vbCrLf
         End If
         
         rsWinCC.MoveNext
