@@ -6,7 +6,7 @@ Sub OnClick(ByVal Item)
     ' Even though the error occurs, make sure that it is continued
     On Error Resume Next
 
-    ' 1. Ekrandaki güncel list_data tablosunu bağla
+    ' Connect the recent list_data table on the graphic designer
     Set oList = ScreenItems("list_data")
 
     ' Retrived the number of row and columns from recent table dynamically
