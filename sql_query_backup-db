@@ -15,7 +15,6 @@ BEGIN
     DECLARE @CurrentTagID INT;
     DECLARE @DynamicSQL NVARCHAR(MAX);
 
-    -- TagDefinitions tablosundaki tüm tag tanımlarını dönüyoruz
     DECLARE Tag_Cursor CURSOR FOR 
     SELECT TagID FROM [backup-wincc].[dbo].[TagDefinitions] ORDER BY TagID;
 
@@ -24,8 +23,6 @@ BEGIN
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
-        -- Hataları gizleyen TRY/CATCH blokları tamamen kaldırıldı!
-        -- Böylece hangi tag patlıyorsa hatasını ekranda doğrudan göreceğiz.
         SET @DynamicSQL = N'
             INSERT INTO [backup-wincc].[dbo].[HistoryTagLogs] (TagID, Timestamp, TagValue, QualityCode)
             SELECT CAST(' + CAST(@CurrentTagID AS VARCHAR(10)) + ' AS INT), [Timestamp], CAST([RealValue] AS FLOAT), CAST([Quality] AS INT)
@@ -35,7 +32,6 @@ BEGIN
                 WHERE sub.TagID = CAST(' + CAST(@CurrentTagID AS VARCHAR(10)) + ' AS INT) AND sub.Timestamp = [Timestamp]
             )';
 
-        -- Sorguyu doğrudan yürütüyoruz (Hata fırlatması için)
         EXEC sp_executesql @DynamicSQL;
 
         FETCH NEXT FROM Tag_Cursor INTO @CurrentTagID;
