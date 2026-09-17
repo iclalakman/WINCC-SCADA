@@ -20,11 +20,11 @@ Function action
     Set conn = CreateObject("ADODB.Connection")
     conn.Open strConn
 
-    ' Döngülü çalışan yeni toplu prosedürü çağırıyoruz
+    ' Call the loop
     strSQL = "EXEC dbo.Sp_WinCC_AllTags_Backup '" & sStartUTC & "', '" & sEndUTC & "'"
     conn.Execute strSQL
 
-    HMIRuntime.Trace "--- DÖNGÜLÜ TOPLU TRANSFER TETİKLENDİ ---" & vbCrLf
+    HMIRuntime.Trace "--- The loop has been triggered ---" & vbCrLf
 
     conn.Close
     Set conn = Nothing
