@@ -27,7 +27,7 @@ Function action
     strSQL = "EXEC dbo.Sp_WinCC_SingleTag_Backup " & targetTagID & ", '" & sStartUTC & "', '" & sEndUTC & "'"
     conn.Execute strSQL
 
-    HMIRuntime.Trace "--- DOĞRU TIRNAK TRANSFERİ TETİKLENDİ ---" & vbCrLf
+    HMIRuntime.Trace "--- Correct one has been triggered. ---" & vbCrLf
 
     conn.Close
     Set conn = Nothing
