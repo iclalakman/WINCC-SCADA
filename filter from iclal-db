@@ -15,15 +15,15 @@ Sub OnClick(ByVal Item)
 	mEnd = Minute(ScreenItems("end_time").Value)
 	sEnd = Second(ScreenItems("end_time").Value)
 	
-	' 24 Saatlik Saat Formatı 
+	' 24 Hours format
 	tStart = Right("0" & hStart, 2) & ":" & Right("0" & mStart, 2) & ":" & Right("0" & sStart, 2)
 	tEnd = Right("0" & hEnd, 2) & ":" & Right("0" & mEnd, 2) & ":" & Right("0" & sEnd, 2)
 	
-	' SQL Standart Formatında Birleştir 
+	' Merge in SQL format
 	strStart = Year(dStart) & "-" & Right("0" & Month(dStart), 2) & "-" & Right("0" & Day(dStart), 2) & " " & tStart
 	strEnd = Year(dEnd) & "-" & Right("0" & Month(dEnd), 2) & "-" & Right("0" & Day(dEnd), 2) & " " & tEnd
 	
-	' Tarih/Saat Mantık Kontrolü
+	' Date-Time Control
 	If CDate(strStart) > CDate(strEnd) Then
 		MsgBox "Start Date cannot be older than End Date", vbExclamation, "Error"
 	Exit Sub
@@ -72,7 +72,7 @@ Sub OnClick(ByVal Item)
 	
 	End If
 	
-	' Tabloyu Doldur 
+	'Fill the table which is list_data
 	Set lst = ScreenItems("list_data")
 	lst.ListItems.Clear
 	lst.ColumnHeaders.Clear
@@ -93,14 +93,14 @@ Sub OnClick(ByVal Item)
 	rowCount = 0
 	
 	Do While Not rs.EOF
-	' 1. Sütun (Date)
+	' First Column for Date 
 		If Not IsNull(rs.Fields(0).Value) Then
 			Set itemRow = lst.ListItems.Add(, , CStr(rs.Fields(0).Value))
 		Else
 			Set itemRow = lst.ListItems.Add(, , "-")
 	End If
 	
-	' Diğer Sütunlar
+	' Other Columns
 	For i = 1 To colCount - 1
 		If Not IsNull(rs.Fields(i).Value) Then
 		itemRow.SubItems(i) = CStr(rs.Fields(i).Value)
@@ -114,7 +114,7 @@ Sub OnClick(ByVal Item)
 	
 	Loop
 	
-	' 7. Kapatma
+	' Closure
 	rs.Close
 	conn.Close
 	Set rs = Nothing
