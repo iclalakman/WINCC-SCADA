@@ -1,0 +1,122 @@
+Sub OnClick(ByVal Item)                                                              
+	Dim dStart, dEnd, tStart, tEnd, strStart, strEnd
+	Dim hStart, mStart, sStart, hEnd, mEnd, sEnd
+	Dim connStr, sql, conn, rs
+	Dim lst, itemRow, i, colCount, chkObj, chkVal, selectCols, rowCount
+	
+	dStart = ScreenItems("start_date").Value
+	dEnd = ScreenItems("end_date").Value
+	
+	hStart = Hour(ScreenItems("start_time").Value)
+	mStart = Minute(ScreenItems("start_time").Value)
+	sStart = Second(ScreenItems("start_time").Value)
+	
+	hEnd = Hour(ScreenItems("end_time").Value)
+	mEnd = Minute(ScreenItems("end_time").Value)
+	sEnd = Second(ScreenItems("end_time").Value)
+	
+	' 24 Saatlik Saat Formatı 
+	tStart = Right("0" & hStart, 2) & ":" & Right("0" & mStart, 2) & ":" & Right("0" & sStart, 2)
+	tEnd = Right("0" & hEnd, 2) & ":" & Right("0" & mEnd, 2) & ":" & Right("0" & sEnd, 2)
+	
+	' SQL Standart Formatında Birleştir 
+	strStart = Year(dStart) & "-" & Right("0" & Month(dStart), 2) & "-" & Right("0" & Day(dStart), 2) & " " & tStart
+	strEnd = Year(dEnd) & "-" & Right("0" & Month(dEnd), 2) & "-" & Right("0" & Day(dEnd), 2) & " " & tEnd
+	
+	' Tarih/Saat Mantık Kontrolü
+	If CDate(strStart) > CDate(strEnd) Then
+		MsgBox "Start Date cannot be older than End Date", vbExclamation, "Error"
+	Exit Sub
+	End If
+	
+	
+	Set chkObj = ScreenItems("check_box")
+	chkVal = CLng(chkObj.ProcessValue)
+	
+	selectCols = "Date"
+	If (chkVal And 1) <> 0 Then selectCols = selectCols & ", Pressure"
+	If (chkVal And 2) <> 0 Then selectCols = selectCols & ", Current_Status"
+	If (chkVal And 4) <> 0 Then selectCols = selectCols & ", Temperature"
+	If (chkVal And 8) <> 0 Then selectCols = selectCols & ", Total"
+	
+	
+	sql = "SELECT " & selectCols & " FROM TAG_DATA WHERE Date >= '" & strStart & "' AND Date <= '" & strEnd & "' ORDER BY Date ASC"
+	
+	'  Veritabanı Bağlantısı
+	On Error Resume Next
+	Set conn = CreateObject("ADODB.Connection")
+	Set rs = CreateObject("ADODB.Recordset")
+	
+	connStr = "Provider=SQLOLEDB;Data Source=localhost\WINCC;Initial Catalog=iclal-db;Integrated Security=SSPI;"
+	conn.Open connStr
+	
+	If Err.Number <> 0 Then
+		MsgBox "Database Connection Error " & Err.Description, vbCritical, "Error"
+	Err.Clear
+	Exit Sub
+	End If
+	
+	rs.CursorLocation = 3 ' adUseClient
+	rs.Open sql, conn, 3, 1
+	
+	If Err.Number <> 0 Then
+		MsgBox "Query Execution Error " & Err.Description & vbCrLf & "Query:  " & sql, vbCritical, "Error"
+	Err.Clear
+	
+	rs.Close
+	conn.Close
+	
+	Set rs = Nothing
+	Set conn = Nothing
+	Exit Sub
+	
+	End If
+	
+	' Tabloyu Doldur 
+	Set lst = ScreenItems("list_data")
+	lst.ListItems.Clear
+	lst.ColumnHeaders.Clear
+	lst.View = 3
+	lst.GridLines = True
+	lst.FullRowSelect = True
+	
+	colCount = rs.Fields.Count
+	
+	Dim totalWidth, dynamicWidth
+	totalWidth = lst.Width -100
+	
+	For i = 0 To colCount - 1
+	    dynamicWidth = totalWidth / colCount
+	    lst.ColumnHeaders.Add , , rs.Fields(i).Name, dynamicWidth
+	Next
+	
+	rowCount = 0
+	
+	Do While Not rs.EOF
+	' 1. Sütun (Date)
+		If Not IsNull(rs.Fields(0).Value) Then
+			Set itemRow = lst.ListItems.Add(, , CStr(rs.Fields(0).Value))
+		Else
+			Set itemRow = lst.ListItems.Add(, , "-")
+	End If
+	
+	' Diğer Sütunlar
+	For i = 1 To colCount - 1
+		If Not IsNull(rs.Fields(i).Value) Then
+		itemRow.SubItems(i) = CStr(rs.Fields(i).Value)
+		Else
+			itemRow.SubItems(i) = "-"
+	End If
+	Next
+	
+	rowCount = rowCount + 1
+	rs.MoveNext
+	
+	Loop
+	
+	' 7. Kapatma
+	rs.Close
+	conn.Close
+	Set rs = Nothing
+	Set conn = Nothing
+End Sub
