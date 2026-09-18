@@ -8,7 +8,7 @@ Function action
     
     'Database connection
     winccDbName = "CC_iclal_pr_26_08_10_15_06_04R"
-    backupConnStr = "Provider=SQLOLEDB;Data Source=ENG\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
+    backupConnStr = "Provider=SQLOLEDB;Data Source=(!Your computer name!)\WINCC;Initial Catalog=backup-wincc;Integrated Security=SSPI;"
     
     'Recent time that this script is triggered(end time)
     endTime = Year(Now) & "-" & Right("0" & Month(Now), 2) & "-" & Right("0" & Day(Now), 2) & " " & Right("0" & Hour(Now), 2) & ":" & Right("0" & Minute(Now), 2) & ":" & Right("0" & Second(Now), 2) & ".000"
