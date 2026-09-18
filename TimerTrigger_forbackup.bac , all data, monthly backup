@@ -44,7 +44,7 @@ Function action
 
         'Error handling of whether error occured 
         If Err.Number <> 0 Then
-            HMIRuntime.Trace "Back up Error: SQL query i! Error: " & Err.Description & vbCrLf
+            HMIRuntime.Trace "Back up Error: SQL query! Error: " & Err.Description & vbCrLf
         Else
             HMIRuntime.Trace "Back up is successful: All data was copied in secure environment!" & vbCrLf
         End If
