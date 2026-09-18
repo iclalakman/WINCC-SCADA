@@ -30,7 +30,7 @@ sql = "INSERT INTO TAG_DATA ([Date], Temperature, Pressure, Current_Status, Tota
 conn.Execute sql
 
 If Err.Number <> 0 Then
-    HMIRuntime.Trace "SQL sorgu hatası: " &Err.Description & " | SQL: " & sql & vbCtrLf
+    HMIRuntime.Trace "SQL Query Error: " &Err.Description & " | SQL: " & sql & vbCtrLf
     Err.Clear
 End If
 
