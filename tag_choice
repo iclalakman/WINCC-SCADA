@@ -17,7 +17,7 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
     oList.GridLines = True
     oList.FullRowSelect = True
    
-    ' Updating column's headers
+    ' Updating column headers
     oList.ColumnHeaders.Add 1, "colID", "Tag ID", 70
     oList.ColumnHeaders.Add 2, "colName", "Tag Name", 350
 
@@ -75,9 +75,9 @@ Dim conn, rs, strConn, strSQL, oList, oItem, tagName, tagID, rowCount, slashPos,
             rs.MoveNext
         Loop
        
-        oList.Refresh ' Forcing the tablo keeping it up to date
+        oList.Refresh ' Forcing the table to keep it up to date
     Else
-        MsgBox "There is no tag found int the SQL table!", vbExclamation, "Warning"
+        MsgBox "There is no tag found in the SQL table!", vbExclamation, "Warning"
     End If
 
     ' Step 5: Closing the connections safely and clean up of the memory
